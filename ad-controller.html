@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Checking Access...</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+
+<script>
+/* ================= AD CONFIG ================= */
+const AD_LINK = "https://cuty.io/czF1yj3fN4nM"; 
+// Cuty.io dashboard destination MUST be:
+// https://matchly-chat.netlify.app/ad-controller.html?ad=done
+
+/* ================= CHAT STATS ================= */
+let stats = JSON.parse(localStorage.getItem('matchly_stats')) || {
+    sessionChats: 0,
+    totalChats: 0
+};
+
+function needsAd() {
+    if (stats.totalChats < 20) {
+        return stats.sessionChats >= 5;
+    } else {
+        return stats.sessionChats >= 2;
+    }
+}
+
+function goToChat() {
+    localStorage.setItem('matchly_stats', JSON.stringify(stats));
+    window.location.href = "RC.html";
+}
+
+/* ================= FLOW CONTROL ================= */
+if (window.location.search.includes("ad=done")) {
+    // Returned after successful ad
+    stats.sessionChats = 0;
+    localStorage.setItem('matchly_stats', JSON.stringify(stats));
+    goToChat();
+} else {
+    if (needsAd()) {
+        // Send to ad (Cuty handles redirect back)
+        window.location.href = AD_LINK;
+    } else {
+        goToChat();
+    }
+}
+</script>
+
+</body>
+</html>

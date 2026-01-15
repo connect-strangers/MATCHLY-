@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matchly | Who are you?</title>
+    <style>
+        :root {
+            --accent: #ffffff;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            background: #000;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Abstract background glow */
+        .bg-glow {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            z-index: -1;
+            filter: blur(50px);
+        }
+
+        .container {
+            text-align: center;
+            backdrop-filter: blur(20px);
+            background: var(--glass);
+            padding: 50px;
+            border-radius: 40px;
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .gender-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option {
+            padding: 20px;
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.02);
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .option:hover {
+            background: white;
+            color: black;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(255,255,255,0.1);
+        }
+
+        .option.selected {
+            background: white;
+            color: black;
+            border-color: white;
+        }
+
+        .next-btn {
+            margin-top: 40px;
+            background: transparent;
+            color: white;
+            border: 1px solid white;
+            padding: 12px 40px;
+            border-radius: 30px;
+            cursor: pointer;
+            opacity: 0.5;
+            pointer-events: none;
+            transition: 0.3s;
+        }
+
+        .next-btn.active {
+            opacity: 1;
+            pointer-events: all;
+            background: white;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow"></div>
+
+    <div class="container">
+        <h1>I AM A...</h1>
+        
+        <div class="gender-options">
+            <div class="option" onclick="selectGender('male')">MALE</div>
+            <div class="option" onclick="selectGender('female')">FEMALE</div>
+            <div class="option" onclick="selectGender('other')">OTHER</div>
+        </div>
+
+        <button id="nextBtn" class="next-btn" onclick="saveAndContinue()">CONTINUE</button>
+    </div>
+
+    <script>
+let selectedGender = "";
+
+function selectGender(gender) {
+    selectedGender = gender;
+
+    document.querySelectorAll('.option').forEach(opt => {
+        opt.classList.remove('selected');
+        if (opt.innerText.toLowerCase() === gender) {
+            opt.classList.add('selected');
+        }
+    });
+
+    document.getElementById('nextBtn').classList.add('active');
+}
+
+function saveAndContinue() {
+    if (!selectedGender) {
+        alert("Please select a gender");
+        return;
+    }
+
+    let user = JSON.parse(localStorage.getItem('matchly_user')) || {};
+    user.gender = selectedGender;
+    localStorage.setItem('matchly_user', JSON.stringify(user));
+
+    window.location.href = "photo.html";
+}
+</script>
+
+</body>
+</html>
