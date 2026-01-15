@@ -5,257 +5,95 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Matchly | Random Chat</title>
     <style>
-        /* --- Base & Background --- */
         body { margin: 0; background: #000; color: #fff; font-family: 'Helvetica Neue', sans-serif; height: 100vh; overflow: hidden; }
         #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
-
-        /* --- Top Bar --- */
-        .top-bar {
-            position: fixed; top: 0; width: 100%; padding: 20px 40px; 
-            display: flex; justify-content: space-between; align-items: center;
-            box-sizing: border-box; z-index: 10;
-        }
-        .online-counter {
-            background: rgba(0, 255, 136, 0.1); border: 1px solid #00ff88;
-            padding: 8px 15px; border-radius: 50px; font-size: 0.75rem;
-            color: #00ff88; font-weight: bold; letter-spacing: 1px;
-        }
-
-        /* --- Main Layout --- */
-        .random-container {
-            display: flex; width: 100vw; height: 100vh; padding-top: 80px; box-sizing: border-box;
-        }
-
-        /* Person Details (Left) */
-        .person-sidebar {
-            width: 350px; padding: 40px; border-right: 1px solid rgba(255,255,255,0.1);
-            display: flex; flex-direction: column; align-items: center; transition: 0.5s; opacity: 0;
-        }
-        .person-sidebar.visible { opacity: 1; }
-        .p-avatar { 
-            width: 150px; height: 150px; border-radius: 50%; border: 2px solid #fff;
-            background-size: cover; background-position: center; margin-bottom: 20px;
-            box-shadow: 0 0 30px rgba(255,255,255,0.1);
-        }
-
-        /* Chat Area (Center/Right) */
+        .top-bar { position: fixed; top: 0; width: 100%; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; z-index: 10; }
+        .online-counter { background: rgba(0, 255, 136, 0.1); border: 1px solid #00ff88; padding: 8px 15px; border-radius: 50px; font-size: 0.75rem; color: #00ff88; font-weight: bold; letter-spacing: 1px; }
+        .random-container { display: flex; width: 100vw; height: 100vh; padding-top: 80px; box-sizing: border-box; }
         .chat-section { flex: 1; display: flex; flex-direction: column; position: relative; }
         .messages-container { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        
-        /* Loading Overlay */
-        .loading-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(20px);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5;
-        }
-        .spinner {
-            width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1);
-            border-top: 3px solid #fff; border-radius: 50%; animation: spin 1s linear infinite;
-        }
+        .loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5; }
+        .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Message Bubbles */
         .bubble { max-width: 60%; padding: 15px 20px; border-radius: 25px; line-height: 1.5; font-size: 0.95rem; animation: slideUp 0.3s ease forwards; }
         .stranger { align-self: flex-start; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); }
         .you { align-self: flex-end; background: #fff; color: #000; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Input Area */
         .input-area { padding: 40px; display: flex; gap: 15px; }
-        #userInput { 
-            flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 50px; padding: 18px 30px; color: #fff; outline: none; transition: 0.3s;
-        }
-        #userInput:focus { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
+        #userInput { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; padding: 18px 30px; color: #fff; outline: none; }
         .btn-stop { background: #ff4444; color: #fff; border: none; padding: 0 25px; border-radius: 50px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
-
     <canvas id="canvas"></canvas>
-
     <div class="top-bar">
-        <div style="font-weight: 900; letter-spacing: 5px;">MATCHLY RANDOM</div>
-        <div class="online-counter" id="onlineCount">5,000 PEOPLE ONLINE</div>
+        <div style="font-weight: 900; letter-spacing: 5px;">MATCHLY</div>
+        <div class="online-counter" id="onlineCount">5,000 ONLINE</div>
     </div>
-
     <div class="random-container">
-        <div class="person-sidebar" id="sidebar">
-            <div class="p-avatar" id="pAvatar"></div>
-            <h2 id="pName" style="margin: 0;">Searching...</h2>
-            <p id="pLoc" style="color: #888; font-size: 0.8rem; text-transform: uppercase; margin: 10px 0;">Location Hidden</p>
-            <div style="width: 100%; height: 1px; background: rgba(255,255,255,0.1); margin: 20px 0;"></div>
-            <p id="pBio" style="text-align: center; font-size: 0.9rem; color: #ccc; line-height: 1.6;"></p>
-        </div>
-
         <div class="chat-section">
             <div class="loading-screen" id="loader">
                 <div class="spinner"></div>
-                <p style="margin-top: 20px; letter-spacing: 2px; font-size: 0.8rem;">FINDING SOMEONE SPECIAL...</p>
+                <p>FINDING STRANGER...</p>
             </div>
-
             <div class="messages-container" id="msgContainer"></div>
-
             <div class="input-area">
-                <button class="btn-stop" onclick="startMatching()">NEW CHAT</button>
-
-                <input type="text" id="userInput" placeholder="Type a message..." autocomplete="off">
+                <button class="btn-stop" onclick="startMatching()">NEXT</button>
+                <input type="text" id="userInput" placeholder="Say hello..." autocomplete="off">
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
     <script>
-/* ---------- USER & STATS ---------- */
-const user = JSON.parse(localStorage.getItem('matchly_user')) || {};
-let stats = JSON.parse(localStorage.getItem('matchly_stats')) || {
-    sessionChats: 0,
-    totalChats: 0
-};
+        // REPLACE THIS URL after Step 2 below (e.g., wss://your-app.onrender.com)
+        const SERVER_URL = "ws://localhost:8080"; 
+        let socket;
 
-/* ---------- GEMINI CONFIG ---------- */
-const GEMINI_API_KEY = "AIzaSyD4aJyz1UXhaH4Oa4CPVpz9Gdf2plQfmb0";
-const GEMINI_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" 
-  + GEMINI_API_KEY;
-
-let conversationHistory = [];
-
-        // --- LIVE COUNTER ---
-        let onlineCount = 5000;
-        setInterval(() => {
-            onlineCount += Math.floor(Math.random() * 20) - 10;
-            document.getElementById('onlineCount').textContent = `${onlineCount.toLocaleString()} PEOPLE ONLINE`;
-        }, 3000);
-
-        // --- STRANGER DATA (BOTS) ---
-        const strangers = [
-            { name: "Julian, 24", loc: "Berlin, DE", bio: "Techno producer. Just looking for some late night inspiration. You into music?", img: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400" },
-            { name: "Maya, 21", loc: "Tokyo, JP", bio: "Film student. I spend too much time thinking about colors in movies. What's your vibe?", img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400" },
-            { name: "Lucian, 27", loc: "New York, US", bio: "Just finished a night shift. Need a distraction from this city noise.", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400" }
-        ];
-
-        let currentStranger = null;
-
-        // --- RANDOM MATCHING LOGIC ---
         function startMatching() {
-    const loader = document.getElementById('loader');
-    const sidebar = document.getElementById('sidebar');
-    const msgContainer = document.getElementById('msgContainer');
-
-    loader.style.display = 'flex';
-    msgContainer.innerHTML = "";
-    sidebar.classList.remove('visible');
-
-    setTimeout(() => {
-        loader.style.display = 'none';
-
-        // ----- COUNT CHAT -----
-        stats.sessionChats++;
-        stats.totalChats++;
-        localStorage.setItem('matchly_stats', JSON.stringify(stats));
-
-        // ----- CHECK AD -----
-        window.location.href = "ad-controller.html";
-    }, 3000);
-}
-function loadUserProfile() {
-    if (user.photo) {
-        document.getElementById('pAvatar').style.backgroundImage =
-            `url(${user.photo})`;
-    }
-
-    if (user.name) {
-        document.getElementById('pName').textContent = user.name;
-    }
-}
-
-loadUserProfile();
-
-
-        // --- AI CHAT LOGIC ---
-        async function handleSend() {
-    const input = document.getElementById('userInput');
-    const text = input.value.trim();
-    if (!text) return;
-
-    addMessage(text, 'you');
-    input.value = '';
-
-    setTimeout(async () => {
-        const response = await getAIResponse(text);
-        addMessage(response, 'stranger');
-    }, 1200 + Math.random() * 1500);
-}
-
-        function addMessage(text, type) {
-            const container = document.getElementById('msgContainer');
-            const b = document.createElement('div');
-            b.className = `bubble ${type}`;
-            b.textContent = text;
-            container.appendChild(b);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        async function getAIResponse(userMessage) {
-    conversationHistory.push({
-        role: "user",
-        parts: [{ text: userMessage }]
-    });
-
-    const response = await fetch(GEMINI_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            contents: conversationHistory,
-            generationConfig: {
-                temperature: 0.9,
-                topK: 40,
-                topP: 0.95
-            }
-        })
-    });
-
-    const data = await response.json();
-    const reply =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Hmm… interesting. Tell me more.";
-
-    conversationHistory.push({
-        role: "model",
-        parts: [{ text: reply }]
-    });
-
-    return reply;
-}
-
-        document.getElementById('userInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleSend();
-        });
-
-        // --- BACKGROUND ---
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const simplex = new SimplexNoise();
-        let width, height, offset = 0;
-        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
-        function draw() {
-            ctx.fillStyle = 'black'; ctx.fillRect(0, 0, width, height);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'; ctx.lineWidth = 1;
-            for (let i = 0; i < 20; i++) {
-                ctx.beginPath();
-                const yBase = (height / 20) * i;
-                for (let x = 0; x <= width; x += 20) {
-                    const y = yBase + simplex.noise2D((x * 0.001) + offset, i * 0.1) * 40;
-                    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            if (socket) socket.close();
+            document.getElementById('loader').style.display = 'flex';
+            document.getElementById('msgContainer').innerHTML = "";
+            
+            socket = new WebSocket(SERVER_URL);
+            
+            socket.onmessage = (e) => {
+                if (e.data === "Connected to stranger") {
+                    document.getElementById('loader').style.display = 'none';
+                    addSystemMsg("You are now chatting with a stranger!");
+                } else if (e.data === "Stranger disconnected") {
+                    addSystemMsg("Stranger left. Click NEXT to find another.");
+                    socket.close();
+                } else {
+                    addMessage(e.data, 'stranger');
                 }
-                ctx.stroke();
-            }
-            offset += 0.001; requestAnimationFrame(draw);
+            };
         }
-        window.addEventListener('resize', resize); resize(); draw();
-        
-        // Start process
+
+        function handleSend() {
+            const input = document.getElementById('userInput');
+            if (!input.value.trim() || !socket || socket.readyState !== 1) return;
+            socket.send(input.value);
+            addMessage(input.value, 'you');
+            input.value = "";
+        }
+
+        function addMessage(txt, type) {
+            const msgArea = document.getElementById('msgContainer');
+            const div = document.createElement('div');
+            div.className = `bubble ${type}`;
+            div.textContent = txt;
+            msgArea.appendChild(div);
+            msgArea.scrollTop = msgArea.scrollHeight;
+        }
+
+        function addSystemMsg(txt) {
+            const div = document.createElement('div');
+            div.style.textAlign = "center"; div.style.fontSize = "0.7rem"; div.style.color = "#888";
+            div.textContent = txt;
+            document.getElementById('msgContainer').appendChild(div);
+        }
+
+        document.getElementById('userInput').addEventListener('keypress', e => { if(e.key === 'Enter') handleSend(); });
         startMatching();
     </script>
 </body>
