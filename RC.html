@@ -37,8 +37,48 @@
 </div>
 
 <script>
+    // Get gender from localStorage (saved in gender.html)
+const userGender = localStorage.getItem('userGender') || 'male'; 
+const socket = new WebSocket("wss://your-render-link.onrender.com");
+
+socket.onopen = () => {
+    // Register gender as soon as connected
+    socket.send(JSON.stringify({ type: "register", gender: userGender }));
+};
+
+socket.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    
+    if (msg.type === "system") {
+        addSystemMsg(msg.text);
+        if(msg.text.includes("Connected")) document.getElementById('loader').style.display = 'none';
+    } 
+    else if (msg.type === "chat") {
+        addMessage(msg.text, "stranger");
+    }
+    else if (msg.type === "ai_reply") {
+        addMessage(msg.text, "ai-bot");
+    }
+};
+
+function handleSend() {
+    const input = document.getElementById('userInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    // Send to partner
+    socket.send(JSON.stringify({ type: "chat", text: text }));
+    addMessage(text, "you");
+    
+    // Optional: Ask AI if message starts with "/bot"
+    if (text.startsWith("/bot")) {
+        socket.send(JSON.stringify({ type: "ai_query", text: text }));
+    }
+    
+    input.value = "";
+}
     // 1. IMPORTANT: Replace this with your RENDER URL after you finish Step 3
-    const SERVER_URL = "wss://your-render-app-name.onrender.com"; 
+    const SERVER_URL = "wss://matchly-8ljs.onrender.com"; 
     
     let socket;
 
@@ -87,3 +127,4 @@
 </script>
 </body>
 </html>
+
