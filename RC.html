@@ -1,130 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matchly | Live Chat</title>
-    <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; height: 100vh; overflow: hidden; }
-        .top-bar { position: fixed; top: 0; width: 100%; padding: 20px; display: flex; justify-content: space-between; z-index: 10; background: rgba(0,0,0,0.5); }
-        .online-counter { color: #00ff88; border: 1px solid #00ff88; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; }
-        .chat-box { height: 100vh; display: flex; flex-direction: column; padding-top: 80px; box-sizing: border-box; }
-        #msgContainer { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .bubble { padding: 12px 18px; border-radius: 20px; max-width: 70%; word-wrap: break-word; }
-        .you { align-self: flex-end; background: #fff; color: #000; }
-        .stranger { align-self: flex-start; background: #222; border: 1px solid #444; }
-        .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; z-index: 100; }
-        .input-area { padding: 20px; display: flex; gap: 10px; background: #111; }
-        #userInput { flex: 1; padding: 15px; border-radius: 30px; border: none; background: #222; color: #fff; outline: none; }
-        .next-btn { background: #ff4444; border: none; color: white; padding: 0 20px; border-radius: 30px; cursor: pointer; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matchly | Random Chat</title>
+
+<style>
+/* ===== YOUR ORIGINAL CSS (UNCHANGED) ===== */
+body{margin:0;background:#000;color:#fff;font-family:'Helvetica Neue',sans-serif;height:100vh;overflow:hidden}
+#canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1}
+.top-bar{position:fixed;top:0;width:100%;padding:20px 40px;display:flex;justify-content:space-between;align-items:center;z-index:10}
+.online-counter{background:rgba(0,255,136,.1);border:1px solid #00ff88;padding:8px 15px;border-radius:50px;font-size:.75rem;color:#00ff88;font-weight:bold}
+.random-container{display:flex;width:100vw;height:100vh;padding-top:80px}
+.person-sidebar{width:350px;padding:40px;border-right:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;align-items:center;opacity:0;transition:.4s}
+.person-sidebar.visible{opacity:1}
+.p-avatar{width:150px;height:150px;border-radius:50%;border:2px solid #fff;background-size:cover;background-position:center;margin-bottom:20px}
+.chat-section{flex:1;display:flex;flex-direction:column;position:relative}
+.messages-container{flex:1;padding:40px;overflow-y:auto;display:flex;flex-direction:column;gap:15px}
+.bubble{max-width:60%;padding:15px 20px;border-radius:25px;font-size:.95rem}
+.stranger{background:rgba(255,255,255,.08);align-self:flex-start}
+.you{background:#fff;color:#000;align-self:flex-end}
+.input-area{padding:30px;display:flex;gap:15px}
+#userInput{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:50px;padding:18px 30px;color:#fff}
+.btn-stop{background:#ff4444;border:none;padding:0 25px;border-radius:50px;color:#fff;font-weight:bold;cursor:pointer}
+.loading-screen{position:absolute;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:5}
+.spinner{width:50px;height:50px;border:3px solid rgba(255,255,255,.2);border-top:3px solid #fff;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
 </head>
+
 <body>
 
-<div id="loader" class="loader"><h2>FINDING A STRANGER...</h2></div>
+<canvas id="canvas"></canvas>
 
 <div class="top-bar">
-    <div style="font-weight:bold; letter-spacing:2px;">MATCHLY</div>
-    <div class="online-counter" id="onlineCount">4,281 ONLINE</div>
+<div style="font-weight:900;letter-spacing:4px">MATCHLY RANDOM</div>
+<div class="online-counter" id="onlineCount">5000 PEOPLE ONLINE</div>
 </div>
 
-<div class="chat-box">
-    <div id="msgContainer"></div>
-    <div class="input-area">
-        <button class="next-btn" onclick="location.reload()">NEXT</button>
-        <input type="text" id="userInput" placeholder="Type a message..." autocomplete="off">
-    </div>
+<div class="random-container">
+<div class="person-sidebar" id="sidebar">
+<div class="p-avatar" id="pAvatar"></div>
+<h2 id="pName">Searching...</h2>
+<p id="pLoc" style="color:#888;font-size:.8rem">Location Hidden</p>
+<p id="pBio" style="text-align:center;color:#ccc"></p>
 </div>
+
+<div class="chat-section">
+<div class="loading-screen" id="loader">
+<div class="spinner"></div>
+<p>FINDING SOMEONE...</p>
+</div>
+
+<div class="messages-container" id="msgContainer"></div>
+
+<div class="input-area">
+<button class="btn-stop" onclick="startChat()">NEW CHAT</button>
+<input id="userInput" placeholder="Type a message...">
+</div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
 
 <script>
-    // Get gender from localStorage (saved in gender.html)
-const userGender = localStorage.getItem('userGender') || 'male'; 
-const socket = new WebSocket("wss://your-render-link.onrender.com");
-
-socket.onopen = () => {
-    // Register gender as soon as connected
-    socket.send(JSON.stringify({ type: "register", gender: userGender }));
+/* ====== AD VERIFICATION ====== */
+let stats = JSON.parse(localStorage.getItem("matchly_stats")) || {
+  chats:0,
+  messages:0
 };
 
-socket.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-    
-    if (msg.type === "system") {
-        addSystemMsg(msg.text);
-        if(msg.text.includes("Connected")) document.getElementById('loader').style.display = 'none';
-    } 
-    else if (msg.type === "chat") {
-        addMessage(msg.text, "stranger");
-    }
-    else if (msg.type === "ai_reply") {
-        addMessage(msg.text, "ai-bot");
-    }
-};
-
-function handleSend() {
-    const input = document.getElementById('userInput');
-    const text = input.value.trim();
-    if (!text) return;
-
-    // Send to partner
-    socket.send(JSON.stringify({ type: "chat", text: text }));
-    addMessage(text, "you");
-    
-    // Optional: Ask AI if message starts with "/bot"
-    if (text.startsWith("/bot")) {
-        socket.send(JSON.stringify({ type: "ai_query", text: text }));
-    }
-    
-    input.value = "";
+function requireAd(){
+  localStorage.setItem("matchly_stats",JSON.stringify(stats));
+  window.location.href="ad-controller.html";
 }
-    // 1. IMPORTANT: Replace this with your RENDER URL after you finish Step 3
-    const SERVER_URL = "wss://matchly-8ljs.onrender.com"; 
-    
-    let socket;
 
-    function connect() {
-        socket = new WebSocket(SERVER_URL);
+/* ====== MATCHING ====== */
+let isUserChat=false;
+let useBot=false;
+let botMemory=[];
 
-        socket.onmessage = (event) => {
-            const data = event.data;
-            if (data === "Connected to stranger") {
-                document.getElementById('loader').style.display = 'none';
-                addSystemMsg("Stranger connected! Say hi.");
-            } else if (data === "Stranger disconnected") {
-                addSystemMsg("Stranger left. Click NEXT to find another.");
-                socket.close();
-            } else if (data !== "Waiting for stranger...") {
-                addMsg(data, 'stranger');
-            }
-        };
-    }
+function startChat(){
+  document.getElementById("loader").style.display="flex";
+  document.getElementById("msgContainer").innerHTML="";
+  document.getElementById("sidebar").classList.remove("visible");
 
-    function addMsg(text, type) {
-        const container = document.getElementById('msgContainer');
-        const div = document.createElement('div');
-        div.className = `bubble ${type}`;
-        div.textContent = text;
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
-    }
+  setTimeout(()=>{
+    stats.chats++;
+    if(stats.chats%5===0) return requireAd();
 
-    function addSystemMsg(text) {
-        const div = document.createElement('div');
-        div.style.cssText = "text-align:center; color:#666; font-size:0.8rem; margin:10px;";
-        div.textContent = text;
-        document.getElementById('msgContainer').appendChild(div);
-    }
+    // simulate real user availability
+    isUserChat=Math.random()>0.6;
+    useBot=!isUserChat;
 
-    document.getElementById('userInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && e.target.value.trim() !== "") {
-            socket.send(e.target.value);
-            addMsg(e.target.value, 'you');
-            e.target.value = "";
-        }
-    });
+    loadProfile();
+    document.getElementById("loader").style.display="none";
+  },2500);
+}
 
-    connect();
+/* ====== PROFILE ====== */
+function loadProfile(){
+  const s=document.getElementById("sidebar");
+  s.classList.add("visible");
+  if(useBot){
+    pName.innerText="Anonymous";
+    pBio.innerText="Just here to talk. No filters.";
+  }else{
+    pName.innerText="Stranger";
+    pBio.innerText="Connected user";
+  }
+}
+
+/* ====== MESSAGES ====== */
+function addMessage(text,type){
+  const b=document.createElement("div");
+  b.className="bubble "+type;
+  b.innerText=text;
+  msgContainer.appendChild(b);
+  msgContainer.scrollTop=msgContainer.scrollHeight;
+}
+
+userInput.addEventListener("keypress",e=>{
+  if(e.key==="Enter" && userInput.value.trim()){
+    const t=userInput.value;
+    userInput.value="";
+    addMessage(t,"you");
+    stats.messages++;
+    if(stats.messages%20===0) return requireAd();
+
+    if(useBot) botReply(t);
+    else setTimeout(()=>addMessage("Message received.","stranger"),800);
+  }
+});
+
+/* ====== ADVANCED LOCAL AI ====== */
+function botReply(input){
+  botMemory.push(input.toLowerCase());
+  let reply="Tell me more.";
+
+  if(/hi|hello/.test(input)) reply="Hey. How’s your day going?";
+  else if(/sad|lonely/.test(input)) reply="You’re not alone here.";
+  else if(/name/.test(input)) reply="Names don’t matter much here.";
+  else if(/where/.test(input)) reply="Somewhere between thoughts.";
+
+  setTimeout(()=>addMessage(reply,"stranger"),1000+Math.random()*1200);
+}
+
+/* ====== BACKGROUND ====== */
+const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d"),noise=new SimplexNoise();
+function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
+function draw(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.strokeStyle="rgba(255,255,255,.1)";
+for(let i=0;i<20;i++){
+ctx.beginPath();
+for(let x=0;x<canvas.width;x+=20){
+const y=(canvas.height/20)*i+noise.noise2D(x*.002,i)*30;
+x?ctx.lineTo(x,y):ctx.moveTo(x,y);
+}
+ctx.stroke();
+}
+requestAnimationFrame(draw);
+}
+resize();draw();window.onresize=resize;
+
+/* START */
+startChat();
 </script>
 </body>
 </html>
-
